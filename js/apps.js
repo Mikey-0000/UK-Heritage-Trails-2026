@@ -506,6 +506,7 @@ if(themeToggle){
     }
     const leaves = Array.from({ length: COUNT }, () => makeLeaf(true));
     let running = true, t = 0;
+    const flies = [];
 
     // gold dust motes (twinkling, slowly rising)
     const motes = Array.from({ length: W < 700 ? 18 : 45 }, () => ({
@@ -537,6 +538,22 @@ if(themeToggle){
         ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 6.283); ctx.fill();
       }
       ctx.shadowBlur = 0;
+      if (document.body.classList.contains("dark")) {
+        while (flies.length < (W < 700 ? 16 : 34)) flies.push({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, s: 0.25 + Math.random() * 0.5, ph: Math.random() * 6.28, r: 1.6 + Math.random() * 1.8 });
+        for (const f of flies) {
+          f.a += (Math.random() - 0.5) * 0.18; f.x += Math.cos(f.a) * f.s; f.y += Math.sin(f.a) * f.s * 0.8;
+          const fdx = f.x - mouse.x, fdy = f.y - mouse.y, fd = Math.hypot(fdx, fdy);
+          if (fd < 90) { f.x += fdx / (fd || 1) * 1.6; f.y += fdy / (fd || 1) * 1.6; }
+          if (f.x < -10) f.x = W + 10; if (f.x > W + 10) f.x = -10; if (f.y < -10) f.y = H + 10; if (f.y > H + 10) f.y = -10;
+          const glow = 0.25 + 0.75 * Math.max(0, Math.sin(t * 1.6 + f.ph));
+          ctx.globalAlpha = glow; ctx.shadowColor = "#d8ff7a"; ctx.shadowBlur = 16; ctx.fillStyle = "#f2ffb0";
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+        }
+        ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+        mouse.vx *= 0.8; mouse.vy *= 0.8;
+        requestAnimationFrame(frame);
+        return;
+      }
       const speed = Math.hypot(mouse.vx, mouse.vy);
       for (let li = leaves.length - 1; li >= 0; li--) {
         const l = leaves[li];
@@ -910,4 +927,114 @@ if(themeToggle){
     btn.textContent = on ? "🔊 Sound on" : "🔇 Sound off";
     if (on) schedule(); else clearTimeout(timer);
   });
+})();
+
+// =========================
+// FAVOURITES + "MY TRAIL" PLANNER
+// =========================
+(function () {
+  const KEY = "myTrail";
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
+  const save = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
+  let trail = load();
+  const page = location.pathname.split("/").pop() || "index.html";
+  const toast = (m) => { const t = document.getElementById("toast"); if (!t) return; t.textContent = m; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200); };
+
+  // --- drawer + launcher
+  const launch = document.createElement("button");
+  launch.id = "trailBtn"; launch.type = "button"; launch.className = "dock-btn";
+  launch.setAttribute("aria-haspopup", "dialog");
+  document.body.appendChild(launch);
+  const drawer = document.createElement("aside");
+  drawer.id = "trailDrawer"; drawer.setAttribute("role", "dialog"); drawer.setAttribute("aria-label", "My trail");
+  drawer.innerHTML = `<div class="td-head"><h2>My Trail <i>♥</i></h2><button type="button" class="td-close" aria-label="Close">✕</button></div>
+    <p class="td-sub">Tap the ♡ on any photo to add a stop. Reorder them to plan your route.</p>
+    <ol class="td-list"></ol>
+    <div class="td-actions"><button class="btn primary" data-a="copy" type="button">Copy itinerary</button><button class="btn secondary" data-a="print" type="button">Print</button><button class="btn tertiary" data-a="clear" type="button">Clear</button></div>`;
+  document.body.appendChild(drawer);
+  const list = drawer.querySelector(".td-list");
+
+  function render() {
+    launch.textContent = `♥ My Trail (${trail.length})`;
+    launch.classList.toggle("has", trail.length > 0);
+    list.innerHTML = "";
+    if (!trail.length) { const li = document.createElement("li"); li.className = "td-empty"; li.textContent = "No stops yet — explore the gallery and tap a heart."; list.appendChild(li); }
+    trail.forEach((s, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<img src="${s.img}" alt=""/><div class="td-info"><b></b><a href="${s.page}">${s.page.replace(".html", "")}</a></div><div class="td-ctl"><button type="button" data-m="up" aria-label="Move up">↑</button><button type="button" data-m="down" aria-label="Move down">↓</button><button type="button" data-m="del" aria-label="Remove">✕</button></div>`;
+      li.querySelector("b").textContent = `${i + 1}. ${s.name}`;
+      li.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+        const m = b.dataset.m;
+        if (m === "del") trail.splice(i, 1);
+        if (m === "up" && i > 0) [trail[i - 1], trail[i]] = [trail[i], trail[i - 1]];
+        if (m === "down" && i < trail.length - 1) [trail[i + 1], trail[i]] = [trail[i], trail[i + 1]];
+        save(trail); render(); syncHearts();
+      }));
+      list.appendChild(li);
+    });
+  }
+  function open() { drawer.classList.add("open"); drawer.querySelector(".td-close").focus(); }
+  function close() { drawer.classList.remove("open"); launch.focus(); }
+  launch.addEventListener("click", () => drawer.classList.contains("open") ? close() : open());
+  drawer.querySelector(".td-close").addEventListener("click", close);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.classList.contains("open")) close(); });
+  drawer.querySelector('[data-a="clear"]').addEventListener("click", () => { trail = []; save(trail); render(); syncHearts(); });
+  drawer.querySelector('[data-a="print"]').addEventListener("click", () => { document.body.classList.add("print-trail"); window.print(); setTimeout(() => document.body.classList.remove("print-trail"), 500); });
+  drawer.querySelector('[data-a="copy"]').addEventListener("click", async () => {
+    const txt = "My UK Heritage Trail\n" + trail.map((s, i) => `${i + 1}. ${s.name}`).join("\n");
+    try { await navigator.clipboard.writeText(txt); toast("Itinerary copied ✓"); } catch (e) { toast("Couldn't copy — select the list instead"); }
+  });
+
+  // --- hearts on every photo card
+  const cards = [...document.querySelectorAll(".gallery-grid figure.card, .cards .card")].filter((c) => c.querySelector("img"));
+  const hearts = [];
+  cards.forEach((c) => {
+    const img = c.querySelector("img");
+    const nameEl = c.querySelector("strong, h2, h3");
+    const name = nameEl ? nameEl.textContent.trim() : img.alt;
+    const id = img.getAttribute("src") + "|" + name;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "heart"; b.setAttribute("aria-label", "Add " + name + " to My Trail");
+    b.textContent = "♡";
+    c.appendChild(b);
+    b.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const k = trail.findIndex((s) => s.id === id);
+      if (k >= 0) { trail.splice(k, 1); toast(name + " removed"); }
+      else { trail.push({ id, name, img: img.getAttribute("src"), page }); toast(name + " added to My Trail ♥"); b.classList.add("pop"); setTimeout(() => b.classList.remove("pop"), 600); }
+      save(trail); render(); syncHearts();
+    });
+    hearts.push({ b, id, name });
+  });
+  function syncHearts() {
+    hearts.forEach(({ b, id, name }) => {
+      const on = trail.some((s) => s.id === id);
+      b.textContent = on ? "♥" : "♡"; b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+  }
+  render(); syncHearts();
+})();
+
+// =========================
+// CONFETTI on successful sign-up
+// =========================
+(function () {
+  const st = document.getElementById("formStatus");
+  if (!st) return;
+  function burst() {
+    const c = document.createElement("canvas");
+    c.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10003";
+    document.body.appendChild(c);
+    const W = (c.width = innerWidth), H = (c.height = innerHeight), x = c.getContext("2d");
+    const cols = ["#c7a56b", "#e6b84d", "#2a5a4a", "#b5532a", "#f7c6d3", "#ffffff"];
+    const ps = Array.from({ length: 140 }, () => ({ x: W / 2 + (Math.random() - .5) * 200, y: H * 0.6, vx: (Math.random() - .5) * 16, vy: -8 - Math.random() * 12, w: 6 + Math.random() * 7, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[(Math.random() * cols.length) | 0] }));
+    let f = 0;
+    (function tick() {
+      x.clearRect(0, 0, W, H);
+      ps.forEach((p) => { p.vy += 0.32; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.globalAlpha = Math.max(0, 1 - f / 140); x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore(); });
+      if (++f < 140) requestAnimationFrame(tick); else c.remove();
+    })();
+  }
+  new MutationObserver(() => { if (/^Thank you/.test(st.textContent.trim())) burst(); }).observe(st, { childList: true, characterData: true, subtree: true });
 })();

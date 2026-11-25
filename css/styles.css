@@ -790,3 +790,36 @@ body.leaving{opacity:0;transition:opacity .28s}
 
 body.dark .map-card,body.dark .tl-card{background:var(--paper)}
 body.dark .map-card p,body.dark .tl-card p{color:#c6d0c3}
+
+/* ==========================================================
+   FAVOURITES / MY TRAIL, NIGHT SKY
+   ========================================================== */
+.heart{position:absolute;top:12px;right:12px;z-index:3;width:42px;height:42px;border-radius:50%;border:1px solid rgba(199,165,107,.7);background:rgba(16,42,36,.55);backdrop-filter:blur(6px);color:#fff;font-size:1.25rem;line-height:1;cursor:pointer;transition:transform .25s,background .25s,color .25s}
+.heart:hover{transform:scale(1.12);background:rgba(16,42,36,.85)}
+.heart.on{background:#fff;color:#c0392b}
+.heart.pop{animation:heartpop .6s cubic-bezier(.2,.8,.2,1)}
+@keyframes heartpop{30%{transform:scale(1.5)}60%{transform:scale(.9)}}
+#trailBtn{bottom:70px}
+#trailBtn.has{background:var(--gold);color:var(--forest-dark)}
+#trailDrawer{position:fixed;top:0;right:0;height:100%;width:min(400px,100vw);z-index:10000;background:var(--paper);color:var(--ink);border-left:2px solid var(--gold);box-shadow:-30px 0 60px -20px rgba(0,0,0,.45);padding:26px 24px;transform:translateX(105%);transition:transform .5s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:12px;overflow:hidden}
+#trailDrawer.open{transform:none}
+.td-head{display:flex;justify-content:space-between;align-items:center}
+.td-head h2{margin:0;font-size:1.8rem}.td-head i{color:#c0392b;font-style:normal}
+.td-close{border:1px solid var(--line);background:none;color:inherit;width:38px;height:38px;border-radius:50%;cursor:pointer}
+.td-sub{margin:0;color:#526259;font-size:.9rem}
+.td-list{list-style:none;margin:6px 0;padding:0;overflow:auto;flex:1;display:grid;gap:10px;align-content:start}
+.td-list li{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px;animation:swap .4s both}
+.td-list img{width:64px;height:54px;object-fit:cover;border-radius:8px}
+.td-info b{display:block;font-size:.92rem}.td-info a{font-size:.75rem;color:#9a7d4b;text-transform:capitalize}
+.td-ctl{display:flex;gap:4px}.td-ctl button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:none;color:inherit;cursor:pointer}
+.td-ctl button:hover{background:var(--gold);color:var(--forest-dark)}
+.td-empty{display:block!important;border:1px dashed var(--line)!important;text-align:center;color:#526259;padding:24px 12px!important;font-size:.92rem}
+.td-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media print{body.print-trail>*:not(#trailDrawer){display:none!important}body.print-trail #trailDrawer{position:static;transform:none;width:100%;border:0;box-shadow:none}body.print-trail .td-actions,body.print-trail .td-close,body.print-trail .td-ctl{display:none}}
+@media (max-width:760px){#trailBtn{bottom:64px}}
+
+/* Night sky for dark mode */
+body.dark::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(1.5px 1.5px at 40px 60px,#fff,transparent),radial-gradient(1px 1px at 130px 140px,#f1e6d0,transparent),radial-gradient(1.5px 1.5px at 220px 40px,#fff,transparent),radial-gradient(1px 1px at 300px 210px,#fff,transparent),radial-gradient(1.2px 1.2px at 90px 250px,#f1e6d0,transparent),radial-gradient(1px 1px at 260px 120px,#fff,transparent);background-size:340px 300px;animation:twinkle 5s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.35}to{opacity:.85}}
+body.dark::after{content:"";position:fixed;top:90px;right:6%;width:70px;height:70px;border-radius:50%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 35% 35%,#fffbe8,#e9dfb8 60%,#cdbf8f);box-shadow:0 0 60px 18px rgba(240,230,180,.25);animation:moonfloat 14s ease-in-out infinite alternate}
+@keyframes moonfloat{to{transform:translateY(14px)}}
