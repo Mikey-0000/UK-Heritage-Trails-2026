@@ -553,8 +553,8 @@ body.dark .nav-list a.active{color:var(--gold)!important}
 .theme-toggle:hover{background:var(--gold);color:var(--forest-dark);transform:translateY(-1px)}
 
 /* Hero */
-.editorial-photo{animation:kenburns 22s ease-in-out infinite alternate}
-@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09) translate(-1%,-1%)}}
+.editorial-photo{animation:kenburns 40s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.04)}}
 .editorial-hero h1{text-shadow:0 4px 40px rgba(0,0,0,.35);animation:rise 1s .1s both cubic-bezier(.2,.8,.2,1)}
 .editorial-hero .eyebrow,.editorial-hero .hero-subtitle,.editorial-hero .hero-actions{animation:rise 1s .3s both cubic-bezier(.2,.8,.2,1)}
 .editorial-hero .hero-actions{animation-delay:.5s}
@@ -573,7 +573,7 @@ body.dark .nav-list a.active{color:var(--gold)!important}
 
 /* Cards */
 .card{border-radius:16px!important;border:1px solid var(--line);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s,border-color .3s;overflow:hidden;position:relative}
-.card:hover{transform:translateY(-8px);box-shadow:0 26px 44px -22px rgba(16,42,36,.45);border-color:var(--gold)}
+.card:hover{transform:translateY(-5px);box-shadow:0 26px 44px -22px rgba(16,42,36,.45);border-color:var(--gold)}
 .card::after{content:"";position:absolute;left:0;top:0;height:3px;width:0;background:linear-gradient(90deg,var(--gold),transparent);transition:width .5s}
 .card:hover::after{width:100%}
 .card img,.gallery-grid img{transition:transform .8s cubic-bezier(.2,.8,.2,1),filter .5s}
@@ -711,3 +711,9 @@ body.leaving{opacity:0;transition:opacity .28s}
 .editorial-photo{inset:-6%!important;filter:saturate(.9) contrast(1.03)}
 .editorial-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(25,59,50,.28),rgba(16,42,36,.38));mix-blend-mode:multiply;z-index:-1;pointer-events:none}
 .editorial-shade{background:linear-gradient(90deg,rgba(8,30,24,.82),rgba(9,32,26,.5) 55%,rgba(7,29,23,.28)),linear-gradient(0deg,rgba(9,32,26,.65),transparent 35%)!important}
+
+/* ---- Calm extras ---- */
+.card.reveal img{clip-path:inset(0 0 100% 0);transition:clip-path 1.2s cubic-bezier(.65,0,.2,1) .15s,transform .8s cubic-bezier(.2,.8,.2,1)}
+.card.reveal.in img{clip-path:inset(0)}
+.page-head h1::after,.section-heading h2::after,.section-head h2::after{content:"";display:block;width:0;height:3px;margin-top:14px;background:linear-gradient(90deg,var(--gold),transparent);transition:width 1.3s cubic-bezier(.2,.8,.2,1) .4s}
+.in h1::after,.in h2::after,h1.in::after,h2.in::after{width:96px}

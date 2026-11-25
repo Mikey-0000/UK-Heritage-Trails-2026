@@ -323,10 +323,10 @@ if(themeToggle){
       card.style.setProperty("--mx", x + "px");
       card.style.setProperty("--my", y + "px");
       if (fine && !reduce && !card.matches("form, .form")) {
-        const rx = ((y / r.height) - 0.5) * -7;
-        const ry = ((x / r.width) - 0.5) * 7;
+        const rx = ((y / r.height) - 0.5) * -2;
+        const ry = ((x / r.width) - 0.5) * 2;
         card.style.transition = "transform .12s, box-shadow .45s, border-color .3s";
-        card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-8px)`;
+        card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-5px)`;
       }
     });
     card.addEventListener("pointerleave", () => {
@@ -337,7 +337,7 @@ if(themeToggle){
 
   // ---- Magnetic buttons + ripple
   document.querySelectorAll(".btn, .theme-toggle").forEach((btn) => {
-    if (fine && !reduce) {
+    if (false) {
       btn.addEventListener("pointermove", (e) => {
         const r = btn.getBoundingClientRect();
         const dx = (e.clientX - (r.left + r.width / 2)) * 0.25;
@@ -690,14 +690,3 @@ if(themeToggle){
   window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("leaving"); });
 })();
 
-// Hero: headline drifts with the mouse
-(function () {
-  const h1 = document.querySelector(".editorial-hero h1");
-  const photo = document.querySelector(".editorial-photo");
-  if (!h1) return;
-  window.addEventListener("pointermove", (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5), y = (e.clientY / window.innerHeight - 0.5);
-    h1.style.translate = `${x * -22}px ${y * -14}px`;
-    if (photo) photo.style.rotate = `${x * 0.6}deg`;
-  }, { passive: true });
-})();
