@@ -475,7 +475,12 @@ if(themeToggle){
     leafPath.moveTo(0, -1);
     leafPath.bezierCurveTo(0.95, -0.5, 0.7, 0.65, 0, 1);
     leafPath.bezierCurveTo(-0.7, 0.65, -0.95, -0.5, 0, -1);
-    const palette = ["#c7a56b", "#d98e3a", "#b5532a", "#8a3b1e", "#7a9a3c", "#4f7a45", "#e6b84d"];
+    const palettes = {
+      autumn: ["#c7a56b", "#d98e3a", "#b5532a", "#8a3b1e", "#7a9a3c", "#4f7a45", "#e6b84d"],
+      winter: ["#ffffff", "#eef5fb", "#d6e8f5", "#ffffff"],
+      spring: ["#f7c6d3", "#f3a6bd", "#fde3ea", "#ffffff", "#c9e4a5"]
+    };
+    let season = "autumn";
     const COUNT = W < 700 ? 16 : 34;
     const mouse = { x: -999, y: -999, vx: 0, vy: 0 };
     window.addEventListener("pointermove", (e) => {
@@ -487,8 +492,8 @@ if(themeToggle){
       return {
         x: Math.random() * W,
         y: initial ? Math.random() * H : -30 - Math.random() * 120,
-        s: 7 + Math.random() * 11,
-        c: palette[(Math.random() * palette.length) | 0],
+        s: season === "winter" ? 1.5 + Math.random() * 3.5 : season === "spring" ? 5 + Math.random() * 6 : 7 + Math.random() * 11,
+        c: palettes[season][(Math.random() * palettes[season].length) | 0],
         vy: 0.5 + Math.random() * 0.9,
         vx: 0,
         rot: Math.random() * Math.PI * 2,
@@ -549,6 +554,11 @@ if(themeToggle){
         l.y += l.vy;
         l.rot += l.vr + l.vx * 0.01; l.flip += 0.03;
         if (l.y > H + 30 || l.x < -60 || l.x > W + 60) { if (l.burst) { leaves.splice(li, 1); continue; } Object.assign(l, makeLeaf(false)); }
+        if (season === "winter") {
+          ctx.globalAlpha = l.a; ctx.fillStyle = l.c; ctx.shadowColor = "rgba(255,255,255,.9)"; ctx.shadowBlur = 6;
+          ctx.beginPath(); ctx.arc(l.x, l.y, l.s, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+          continue;
+        }
         ctx.save();
         ctx.translate(l.x, l.y);
         ctx.rotate(l.rot);
@@ -567,25 +577,36 @@ if(themeToggle){
     }
     function start() { if (!running) { running = true; requestAnimationFrame(frame); } else requestAnimationFrame(frame); }
 
-    // on/off switch (remembered)
+    // season switcher: autumn -> winter -> spring -> off (remembered)
     const sw = document.createElement("button");
     sw.id = "leafToggle"; sw.type = "button"; sw.className = "theme-toggle";
     const hdr = document.getElementById("themeToggle");
-    function setLeaves(on) {
-      sw.setAttribute("aria-pressed", String(on));
-      sw.setAttribute("aria-label", on ? "Turn falling leaves off" : "Turn falling leaves on");
-      sw.textContent = on ? "🍂 Leaves" : "🍃 Leaves off";
-      canvas.style.display = on ? "" : "none";
-      if (on) { running = false; start(); } else running = false;
-      try { localStorage.setItem("leaves", on ? "on" : "off"); } catch (e) {}
+    const SEASONS = ["autumn", "winter", "spring", "off"];
+    const LABEL = { autumn: "🍂 Autumn", winter: "❄️ Winter", spring: "🌸 Spring", off: "🍃 Off" };
+    let current = "autumn";
+    function setSeason(name) {
+      current = name;
+      sw.textContent = LABEL[name];
+      sw.setAttribute("aria-label", "Season effect: " + name + ". Click to change.");
+      if (name === "off") { canvas.style.display = "none"; running = false; }
+      else {
+        season = name;
+        leaves.length = 0;
+        const n = (name === "winter" ? 1.7 : 1) * COUNT;
+        for (let i = 0; i < n; i++) leaves.push(makeLeaf(true));
+        canvas.style.display = ""; running = false; start();
+      }
+      try { localStorage.setItem("season", name); } catch (e) {}
+      window.dispatchEvent(new CustomEvent("seasonchange", { detail: name }));
     }
     if (hdr && hdr.parentNode) hdr.parentNode.insertBefore(sw, hdr);
-    sw.addEventListener("click", () => setLeaves(sw.getAttribute("aria-pressed") !== "true"));
-    let saved = "on"; try { saved = localStorage.getItem("leaves") || "on"; } catch (e) {}
-    running = false; setLeaves(saved !== "off");
+    sw.addEventListener("click", () => setSeason(SEASONS[(SEASONS.indexOf(current) + 1) % SEASONS.length]));
+    let saved = "autumn"; try { saved = localStorage.getItem("season") || "autumn"; } catch (e) {}
+    if (!SEASONS.includes(saved)) saved = "autumn";
+    running = false; setSeason(saved);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) running = false;
-      else if (sw.getAttribute("aria-pressed") === "true") { running = false; start(); }
+      else if (current !== "off") { running = false; start(); }
     });
   }
 
@@ -690,3 +711,203 @@ if(themeToggle){
   window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("leaving"); });
 })();
 
+
+// =========================
+// HOME PAGE SECTIONS: map, stats, timeline
+// =========================
+(function () {
+  const anchor = document.querySelector(".destination-section");
+  if (!anchor) return;
+
+  // ---------- Interactive UK map ----------
+  const GB = [[170,30],[235,22],[256,36],[246,80],[240,120],[218,168],[205,196],[210,226],[240,265],[256,296],[300,322],[302,356],[300,386],[306,406],[298,422],[250,426],[200,432],[160,440],[110,462],[75,478],[78,446],[115,420],[96,394],[46,376],[56,336],[72,288],[115,284],[130,268],[124,234],[126,204],[150,190],[120,174],[126,130],[96,104],[104,62]];
+  const IE = [[60,190],[96,200],[102,240],[90,286],[56,300],[26,270],[20,226]];
+  const smooth = (pts) => {
+    // closed Catmull-Rom spline -> cubic beziers (curve passes through every point)
+    const n = pts.length, t = 0.5 / 3 * 2 / 2;
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      const c1 = [p1[0] + (p2[0] - p0[0]) * t, p1[1] + (p2[1] - p0[1]) * t];
+      const c2 = [p2[0] - (p3[0] - p1[0]) * t, p2[1] - (p3[1] - p1[1]) * t];
+      d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+    }
+    return d + "Z";
+  };
+  const PINS = [
+    { id: "skye", name: "Isle of Skye", x: 96, y: 78, img: "images/isle-of-skye.jpg", href: "scotland.html", tag: "Scotland", txt: "Dramatic cliffs and rugged landscapes on Scotland's west coast." },
+    { id: "ness", name: "Loch Ness", x: 150, y: 98, img: "images/loch-ness.jpg", href: "scotland.html", tag: "Scotland", txt: "A famous Highland lake, home of the Loch Ness Monster legend." },
+    { id: "edin", name: "Edinburgh Castle", x: 206, y: 170, img: "images/edinburgh-castle.jpg", href: "scotland.html", tag: "Scotland", txt: "A historic fortress dominating the skyline of Edinburgh." },
+    { id: "lon", name: "London", x: 286, y: 396, img: "images/london.jpg", href: "london.html", tag: "England", txt: "Iconic sights, museums and historic streets in the capital." },
+    { id: "coast", name: "South West Coast Path", x: 108, y: 456, img: "images/coastal-path.jpg", href: "coastal.html", tag: "The Coast", txt: "Clifftop walking routes beside the sea with green hills." }
+  ];
+  const sec = document.createElement("section");
+  sec.className = "container map-section";
+  sec.setAttribute("aria-labelledby", "mapTitle");
+  sec.innerHTML = `
+    <div class="section-heading"><div><p class="eyebrow">FIND YOUR WAY</p><h2 id="mapTitle">Pick a place on <i>the map.</i></h2></div></div>
+    <div class="map-grid">
+      <div class="map-wrap">
+        <svg viewBox="0 0 400 520" role="img" aria-label="Stylised map of the United Kingdom with five featured destinations">
+          <defs><linearGradient id="landG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a5a4a"/><stop offset="1" stop-color="#193b32"/></linearGradient></defs>
+          <path d="${smooth(IE)}" class="land ie"/>
+          <path d="${smooth(GB)}" class="land gb"/>
+          <path id="routePath" class="route" d="M96,78 L150,98 L206,170 L250,290 L286,396 L108,456"/>
+        </svg>
+        ${PINS.map((p) => `<button type="button" class="pin" data-id="${p.id}" style="left:${p.x / 4}%;top:${p.y / 5.2}%" aria-label="${p.name}"><span class="pin-dot"></span><span class="pin-label">${p.name}</span></button>`).join("")}
+      </div>
+      <article class="map-card" aria-live="polite">
+        <img alt="" loading="lazy"/>
+        <div class="map-card-body"><span class="tag"></span><h3></h3><p></p><a class="btn primary" href="#">Explore <span aria-hidden="true">→</span></a></div>
+      </article>
+    </div>`;
+  anchor.after(sec);
+
+  const card = sec.querySelector(".map-card"), cImg = card.querySelector("img"), cTag = card.querySelector(".tag"),
+        cH = card.querySelector("h3"), cP = card.querySelector("p"), cA = card.querySelector("a");
+  const pins = [...sec.querySelectorAll(".pin")];
+  let auto = true, ai = 3, timer;
+  function show(id) {
+    const p = PINS.find((x) => x.id === id);
+    pins.forEach((b) => b.classList.toggle("active", b.dataset.id === id));
+    card.classList.remove("swap"); void card.offsetWidth; card.classList.add("swap");
+    cImg.src = p.img; cImg.alt = p.name; cTag.textContent = p.tag; cH.textContent = p.name; cP.textContent = p.txt; cA.href = p.href;
+  }
+  pins.forEach((b) => {
+    ["pointerenter", "focus", "click"].forEach((ev) => b.addEventListener(ev, () => { auto = false; show(b.dataset.id); }));
+  });
+  show(PINS[ai].id);
+  timer = setInterval(() => { if (!auto) return clearInterval(timer); ai = (ai + 1) % PINS.length; show(PINS[ai].id); }, 3800);
+
+  // ---------- Animated stats ----------
+  const stats = document.createElement("section");
+  stats.className = "stats-strip";
+  stats.innerHTML = `<div class="container stats-grid">
+    <div><b data-count="18">0</b><span>Places featured</span></div>
+    <div><b data-count="3">0</b><span>Gallery regions</span></div>
+    <div><b data-count="8">0</b><span>Regions to follow</span></div>
+    <div><b data-count="4">0</b><span>Ways to explore</span></div></div>`;
+  sec.after(stats);
+  const cio = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return; cio.unobserve(e.target);
+    const el = e.target, end = +el.dataset.count, t0 = performance.now(), dur = 1700;
+    (function step(now) {
+      const k = Math.min(1, (now - t0) / dur), ease = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(end * ease);
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }), { threshold: 0.6 });
+  stats.querySelectorAll("b").forEach((b) => cio.observe(b));
+
+  // ---------- Scrolling timeline ----------
+  const EVENTS = [
+    { when: "AD 122", title: "Hadrian's Wall begins", txt: "Rome starts marking the northern frontier of Britain, leaving ruins that still cross the landscape.", img: "images/history.jpg", href: "popular.html" },
+    { when: "c. 1078", title: "The Tower of London rises", txt: "The White Tower is begun under William the Conqueror, anchoring London's skyline for nearly a thousand years.", img: "images/london.jpg", href: "london.html" },
+    { when: "12th century", title: "Castles crown Scotland", txt: "Royal strongholds such as Edinburgh and Stirling grow into the symbols of a nation's story.", img: "images/edinburgh-castle.jpg", href: "scotland.html" },
+    { when: "1894", title: "Tower Bridge opens", txt: "A Victorian feat of engineering opens over the Thames, still lifting for ships today.", img: "images/tower-bridge.jpg", href: "london.html" },
+    { when: "2000", title: "Tate Modern opens", txt: "A former power station on the South Bank becomes one of the world's great modern art museums.", img: "images/tate.jpg", href: "london.html" }
+  ];
+  const tl = document.createElement("section");
+  tl.className = "container timeline-section";
+  tl.setAttribute("aria-labelledby", "tlTitle");
+  tl.innerHTML = `<div class="section-heading"><div><p class="eyebrow">THROUGH THE AGES</p><h2 id="tlTitle">A journey through <i>British heritage.</i></h2></div></div>
+    <ol class="timeline"><span class="tl-fill" aria-hidden="true"></span>
+    ${EVENTS.map((e, i) => `<li class="tl-item ${i % 2 ? "right" : "left"}"><span class="tl-dot" aria-hidden="true"></span>
+      <a class="tl-card" href="${e.href}"><img src="${e.img}" alt="" loading="lazy"/><div><span class="tl-when">${e.when}</span><h3>${e.title}</h3><p>${e.txt}</p></div></a></li>`).join("")}</ol>`;
+  stats.after(tl);
+  const tlEl = tl.querySelector(".timeline"), fill = tl.querySelector(".tl-fill"), items = [...tl.querySelectorAll(".tl-item")];
+  function tlUpdate() {
+    const r = tlEl.getBoundingClientRect(), mid = window.innerHeight * 0.55;
+    const prog = Math.max(0, Math.min(1, (mid - r.top) / r.height));
+    fill.style.height = prog * 100 + "%";
+    items.forEach((it) => it.classList.toggle("on", it.getBoundingClientRect().top < mid));
+  }
+  window.addEventListener("scroll", tlUpdate, { passive: true });
+  window.addEventListener("resize", tlUpdate);
+  tlUpdate();
+})();
+
+// =========================
+// Sticky "Plan your visit" bar
+// =========================
+(function () {
+  if (/contact/i.test(location.pathname)) return;
+  let dismissed = false;
+  try { dismissed = sessionStorage.getItem("planBar") === "1"; } catch (e) {}
+  if (dismissed) return;
+  const onHome = !!document.getElementById("register");
+  const bar = document.createElement("div");
+  bar.id = "planBar";
+  bar.innerHTML = `<span class="plan-ico" aria-hidden="true">✦</span><span class="plan-txt"><b>Plan your visit</b> — get route ideas &amp; event reminders</span><a class="btn primary" href="${onHome ? "#register" : "index.html#register"}">Sign up</a><button type="button" aria-label="Dismiss">✕</button>`;
+  document.body.appendChild(bar);
+  const reg = document.getElementById("register");
+  let regVisible = false;
+  if (reg && "IntersectionObserver" in window) new IntersectionObserver((es) => { regVisible = es[0].isIntersecting; update(); }, { threshold: 0.15 }).observe(reg);
+  function update() { bar.classList.toggle("show", window.scrollY > 700 && !regVisible); }
+  window.addEventListener("scroll", update, { passive: true });
+  bar.querySelector("button").addEventListener("click", () => { bar.remove(); try { sessionStorage.setItem("planBar", "1"); } catch (e) {} });
+  update();
+})();
+
+// =========================
+// Ambient soundscape (generated in-browser: wind + soft birdsong)
+// =========================
+(function () {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const btn = document.createElement("button");
+  btn.id = "soundToggle"; btn.type = "button"; btn.className = "dock-btn";
+  btn.setAttribute("aria-pressed", "false");
+  btn.textContent = "🔇 Sound off";
+  document.body.appendChild(btn);
+
+  let ac, master, windGain, on = false, season = "autumn", timer;
+  try { season = localStorage.getItem("season") || "autumn"; } catch (e) {}
+  window.addEventListener("seasonchange", (e) => { season = e.detail; if (windGain) windGain.gain.setTargetAtTime(season === "winter" ? 0.9 : 0.45, ac.currentTime, 1.5); });
+
+  function init() {
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = 0; master.connect(ac.destination);
+    const len = ac.sampleRate * 3, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 520;
+    windGain = ac.createGain(); windGain.gain.value = 0.45;
+    const lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = 0.11; lfoG.gain.value = 0.22;
+    lfo.connect(lfoG); lfoG.connect(windGain.gain);
+    src.connect(lp); lp.connect(windGain); windGain.connect(master);
+    src.start(); lfo.start();
+  }
+  function chirp() {
+    if (!on || document.hidden) return schedule();
+    if (season !== "winter") {
+      let t = ac.currentTime + 0.05;
+      const notes = 2 + ((Math.random() * 4) | 0), base = 2300 + Math.random() * 1700;
+      for (let i = 0; i < notes; i++) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = "sine";
+        const f = base * (1 + Math.random() * 0.25);
+        o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.45, t + 0.09);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.045, t + 0.015); g.gain.linearRampToValueAtTime(0, t + 0.12);
+        o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.14);
+        t += 0.15 + Math.random() * 0.05;
+      }
+    }
+    schedule();
+  }
+  function schedule() {
+    clearTimeout(timer);
+    const f = season === "spring" ? 0.5 : 1;
+    timer = setTimeout(chirp, (2500 + Math.random() * 6000) * f);
+  }
+  btn.addEventListener("click", () => {
+    if (!ac) init();
+    on = !on;
+    ac.resume();
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.setTargetAtTime(on ? 0.5 : 0, ac.currentTime, 0.6);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.textContent = on ? "🔊 Sound on" : "🔇 Sound off";
+    if (on) schedule(); else clearTimeout(timer);
+  });
+})();
