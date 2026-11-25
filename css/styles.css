@@ -527,7 +527,6 @@ body.dark .btn.primary {
 }
 
 /* ===== HERITAGE EDITORIAL REDESIGN ===== */
-500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap');
 :root{--forest:#193b32;--forest-dark:#102a24;--cream:#f7f4eb;--paper:#fffdf7;--gold:#c7a56b;--ink:#1c3029;--line:#dcded5}
 html{scroll-padding-top:85px}body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.65}h1,h2,h3{font-family:'Playfair Display',Georgia,serif;letter-spacing:-.025em;line-height:1.18}h1 i,h2 i{font-weight:500;color:#9e8555}h2{font-size:clamp(1.8rem,3vw,3rem)}.container{width:min(1200px,90%)}
 .site-header{background:rgba(250,248,242,.96);border-color:var(--line);backdrop-filter:blur(16px)}.header-inner{min-height:76px}.brand{font-size:1.08rem;display:inline-flex;gap:10px;align-items:center;color:var(--forest);white-space:nowrap}.brand em{font-style:normal;color:#a3834d}.brand-symbol{font-size:1.8rem;color:#a3834d}.site-nav .nav-list{gap:5px;align-items:center}.nav-list a{font-size:.87rem;font-weight:700;color:#42584d;padding:10px 13px}.nav-list a.active{background:var(--forest);color:#fff}.nav-list a:hover{background:#e8ebe2}.nav-list a.active:hover{background:var(--forest)}.nav-list a::after{display:none}.theme-toggle{border:1px solid var(--line);background:transparent;border-radius:30px;padding:9px 13px;color:inherit;cursor:pointer;font-weight:700;font-family:inherit}.nav-toggle{font-family:inherit;font-weight:700;color:var(--ink)}.mobile-menu[hidden]{display:none!important}.mobile-menu{padding:8px 0 20px}.mobile-menu a{font-weight:700}
@@ -662,3 +661,56 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 /* Toast */
 #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,30px);background:var(--forest-dark);color:#f1e6d0;border:1px solid var(--gold);padding:12px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:all .4s;z-index:10001;font-size:.9rem}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ==========================================================
+   WOW LAYER – leaves, ticker, filters, cursor, transitions
+   ========================================================== */
+#leafCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+
+/* Page transitions */
+body{animation:pageIn .7s ease both}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
+body.leaving{opacity:0;transition:opacity .28s}
+
+/* Cursor ring */
+#cursorRing{position:fixed;top:0;left:0;width:34px;height:34px;margin:-17px 0 0 -17px;border:1.5px solid var(--gold);border-radius:50%;pointer-events:none;z-index:10002;opacity:0;transition:width .25s,height .25s,margin .25s,background .25s,opacity .3s;mix-blend-mode:normal}
+#cursorRing.on{opacity:.9}
+#cursorRing.big{width:64px;height:64px;margin:-32px 0 0 -32px;background:rgba(199,165,107,.18)}
+#cursorDot{position:fixed;top:0;left:0;width:6px;height:6px;margin:-3px 0 0 -3px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:10002;opacity:0}
+#cursorDot.on{opacity:1}
+
+/* Rotating hero word */
+.rotor{display:inline-block;min-width:1ch;min-height:1em;vertical-align:bottom;border-right:3px solid var(--gold);padding-right:4px;animation:caret .8s steps(1) infinite}
+@keyframes caret{50%{border-color:transparent}}
+
+/* Place-name ticker */
+.ticker{background:var(--forest-dark);color:#e6d5ae;border-top:1px solid rgba(199,165,107,.4);border-bottom:1px solid rgba(199,165,107,.4);overflow:hidden;white-space:nowrap;padding:16px 0;font-family:'Playfair Display',serif;font-style:italic;font-size:1.25rem}
+.ticker-track{display:inline-flex;gap:38px;animation:ticker 38s linear infinite;padding-left:38px}
+.ticker:hover .ticker-track{animation-play-state:paused}
+.ticker-track span:nth-child(even){color:var(--gold);font-style:normal}
+@keyframes ticker{to{transform:translateX(-50%)}}
+
+/* Filter chips */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 26px}
+.chip{border:1px solid var(--line);background:var(--paper);color:inherit;border-radius:999px;padding:9px 18px;font:600 .88rem 'DM Sans',sans-serif;cursor:pointer;transition:all .3s cubic-bezier(.2,.8,.2,1)}
+.chip:hover{border-color:var(--gold);transform:translateY(-2px)}
+.chip[aria-pressed="true"]{background:var(--forest);color:#fff;border-color:var(--gold);box-shadow:0 8px 18px -8px rgba(25,59,50,.7)}
+.card.filtered-out{display:none}
+.card.pop-in{animation:popIn .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes popIn{from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:none}}
+
+/* Leaf toggle */
+#leafToggle{margin-right:6px}
+
+/* Animated gold shimmer on hero eyebrow + brand */
+.eyebrow.light,.brand em{background:linear-gradient(90deg,#e6d5ae 0%,#fff 50%,#e6d5ae 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 5s linear infinite}
+.brand em{background-image:linear-gradient(90deg,#9a7d4b 0%,#e8c97f 50%,#9a7d4b 100%)}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* Soft floating glow behind headings */
+.page-head,.section-heading{position:relative}
+.page-head::before{content:"";position:absolute;left:-60px;top:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(199,165,107,.28),transparent 70%);filter:blur(10px);z-index:-1;animation:float 9s ease-in-out infinite}
+@keyframes float{50%{transform:translate(30px,20px) scale(1.15)}}
+
+@media (max-width:700px){#cursorRing,#cursorDot{display:none}.ticker{font-size:1rem}}
+@media (prefers-reduced-motion:reduce){#leafCanvas{display:none}.ticker-track{animation:none}}

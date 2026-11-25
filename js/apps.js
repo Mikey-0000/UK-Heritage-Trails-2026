@@ -446,3 +446,219 @@ if(themeToggle){
     if (s && s.textContent.trim()) showToast(s.textContent.trim().slice(0, 80));
   }, 80));
 })();
+
+// =========================
+// WOW layer: leaves, ticker, filters, cursor, transitions
+// =========================
+(function () {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  // ---------- Falling leaves (canvas, reacts to mouse "wind")
+  if (!reduce) {
+    const canvas = document.createElement("canvas");
+    canvas.id = "leafCanvas";
+    canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    let W, H, dpr;
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    const leafPath = new Path2D();
+    leafPath.moveTo(0, -1);
+    leafPath.bezierCurveTo(0.95, -0.5, 0.7, 0.65, 0, 1);
+    leafPath.bezierCurveTo(-0.7, 0.65, -0.95, -0.5, 0, -1);
+    const palette = ["#c7a56b", "#d98e3a", "#b5532a", "#8a3b1e", "#7a9a3c", "#4f7a45", "#e6b84d"];
+    const COUNT = W < 700 ? 16 : 34;
+    const mouse = { x: -999, y: -999, vx: 0, vy: 0 };
+    window.addEventListener("pointermove", (e) => {
+      mouse.vx = e.clientX - mouse.x; mouse.vy = e.clientY - mouse.y;
+      mouse.x = e.clientX; mouse.y = e.clientY;
+    }, { passive: true });
+
+    function makeLeaf(initial) {
+      return {
+        x: Math.random() * W,
+        y: initial ? Math.random() * H : -30 - Math.random() * 120,
+        s: 7 + Math.random() * 11,
+        c: palette[(Math.random() * palette.length) | 0],
+        vy: 0.5 + Math.random() * 0.9,
+        vx: 0,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.04,
+        ph: Math.random() * 6.28,
+        sw: 0.6 + Math.random() * 1.1,
+        flip: Math.random() * 6.28,
+        a: 0.55 + Math.random() * 0.4
+      };
+    }
+    const leaves = Array.from({ length: COUNT }, () => makeLeaf(true));
+    let running = true, t = 0;
+
+    function frame() {
+      if (!running) return;
+      t += 0.016;
+      ctx.clearRect(0, 0, W, H);
+      const speed = Math.hypot(mouse.vx, mouse.vy);
+      for (const l of leaves) {
+        // gentle sway + mouse gust
+        l.vx += Math.sin(t * l.sw + l.ph) * 0.012;
+        const dx = l.x - mouse.x, dy = l.y - mouse.y, d = Math.hypot(dx, dy);
+        if (d < 130 && speed > 1) {
+          const f = (1 - d / 130) * Math.min(speed, 40) * 0.05;
+          l.vx += (dx / (d || 1)) * f + mouse.vx * 0.01;
+          l.vy += (dy / (d || 1)) * f * 0.5 - 0.02;
+          l.vr += (Math.random() - 0.5) * 0.01;
+        }
+        l.vx *= 0.97; l.vy += (0.5 + l.s * 0.04 - l.vy) * 0.01;
+        l.x += l.vx + Math.sin(t * l.sw + l.ph) * 0.5;
+        l.y += l.vy;
+        l.rot += l.vr + l.vx * 0.01; l.flip += 0.03;
+        if (l.y > H + 30 || l.x < -60 || l.x > W + 60) Object.assign(l, makeLeaf(false));
+        ctx.save();
+        ctx.translate(l.x, l.y);
+        ctx.rotate(l.rot);
+        ctx.scale(l.s * (0.35 + 0.65 * Math.abs(Math.cos(l.flip))), l.s * 1.5);
+        ctx.globalAlpha = l.a;
+        ctx.fillStyle = l.c;
+        ctx.fill(leafPath);
+        ctx.globalAlpha = l.a * 0.5;
+        ctx.strokeStyle = "rgba(60,30,10,.7)";
+        ctx.lineWidth = 0.06;
+        ctx.beginPath(); ctx.moveTo(0, -1); ctx.lineTo(0, 1); ctx.stroke();
+        ctx.restore();
+      }
+      mouse.vx *= 0.8; mouse.vy *= 0.8;
+      requestAnimationFrame(frame);
+    }
+    function start() { if (!running) { running = true; requestAnimationFrame(frame); } else requestAnimationFrame(frame); }
+
+    // on/off switch (remembered)
+    const sw = document.createElement("button");
+    sw.id = "leafToggle"; sw.type = "button"; sw.className = "theme-toggle";
+    const hdr = document.getElementById("themeToggle");
+    function setLeaves(on) {
+      sw.setAttribute("aria-pressed", String(on));
+      sw.setAttribute("aria-label", on ? "Turn falling leaves off" : "Turn falling leaves on");
+      sw.textContent = on ? "🍂 Leaves" : "🍃 Leaves off";
+      canvas.style.display = on ? "" : "none";
+      if (on) { running = false; start(); } else running = false;
+      try { localStorage.setItem("leaves", on ? "on" : "off"); } catch (e) {}
+    }
+    if (hdr && hdr.parentNode) hdr.parentNode.insertBefore(sw, hdr);
+    sw.addEventListener("click", () => setLeaves(sw.getAttribute("aria-pressed") !== "true"));
+    let saved = "on"; try { saved = localStorage.getItem("leaves") || "on"; } catch (e) {}
+    running = false; setLeaves(saved !== "off");
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) running = false;
+      else if (sw.getAttribute("aria-pressed") === "true") { running = false; start(); }
+    });
+  }
+
+  // ---------- Rotating hero word
+  const word = document.querySelector(".editorial-hero h1 i");
+  if (word && !reduce) {
+    const words = ["story.", "secret.", "legend.", "journey.", "past."];
+    word.textContent = "";
+    const span = document.createElement("span");
+    span.className = "rotor";
+    word.appendChild(span);
+    let wi = 0, ci = 0, del = false;
+    (function tick() {
+      const w = words[wi];
+      span.textContent = w.slice(0, ci);
+      let delay = del ? 55 : 120;
+      if (!del && ci === w.length) { del = true; delay = 1800; }
+      else if (del && ci === 0) { del = false; wi = (wi + 1) % words.length; delay = 350; }
+      else ci += del ? -1 : 1;
+      setTimeout(tick, delay);
+    })();
+  }
+
+  // ---------- Ticker under hero (home page)
+  const hero = document.querySelector(".editorial-hero");
+  if (hero) {
+    const places = ["London", "Edinburgh Castle", "Isle of Skye", "Tower Bridge", "Loch Ness", "Stirling Castle", "Tate Modern", "Eilean Donan", "South West Coast Path", "Scottish Highlands", "Lighthouses", "National Parks"];
+    const items = places.flatMap((p) => [p, "✦"]);
+    const tk = document.createElement("div");
+    tk.className = "ticker";
+    tk.setAttribute("aria-hidden", "true");
+    const track = document.createElement("div");
+    track.className = "ticker-track";
+    [...items, ...items].forEach((txt) => { const s = document.createElement("span"); s.textContent = txt; track.appendChild(s); });
+    tk.appendChild(track);
+    hero.after(tk);
+  }
+
+  // ---------- Popular Places filter chips
+  const grid = document.querySelector("main .cards");
+  if (grid && /Popular/i.test(document.title)) {
+    const map = [["London", "City"], ["Castle", "Castles"], ["Coastal", "Coast"], ["Historic", "Heritage"], ["Museum", "Culture"], ["National", "Nature"]];
+    const cards = [...grid.querySelectorAll(".card")];
+    cards.forEach((c) => {
+      const h = (c.querySelector("h2") || {}).textContent || "";
+      const m = map.find(([k]) => h.includes(k));
+      c.dataset.cat = m ? m[1] : "Other";
+    });
+    const cats = ["All", ...new Set(cards.map((c) => c.dataset.cat))];
+    const bar = document.createElement("div");
+    bar.className = "chips";
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "Filter places");
+    cats.forEach((cat) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = cat;
+      b.setAttribute("aria-pressed", String(cat === "All"));
+      b.addEventListener("click", () => {
+        bar.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        cards.forEach((c) => {
+          const show = cat === "All" || c.dataset.cat === cat;
+          c.classList.toggle("filtered-out", !show);
+          c.classList.remove("pop-in");
+          if (show) { c.classList.add("in"); void c.offsetWidth; c.classList.add("pop-in"); }
+        });
+      });
+      bar.appendChild(b);
+    });
+    grid.before(bar);
+  }
+
+  // ---------- Glowing cursor ring
+  if (fine && !reduce) {
+    const ring = document.createElement("div"), dot = document.createElement("div");
+    ring.id = "cursorRing"; dot.id = "cursorDot";
+    document.body.append(ring, dot);
+    let tx = 0, ty = 0, rx = 0, ry = 0;
+    window.addEventListener("pointermove", (e) => {
+      tx = e.clientX; ty = e.clientY;
+      ring.classList.add("on"); dot.classList.add("on");
+      dot.style.transform = `translate(${tx}px,${ty}px)`;
+      ring.classList.toggle("big", !!e.target.closest("a, button, .card, .zoomable, select, input, label"));
+    }, { passive: true });
+    document.addEventListener("pointerleave", () => { ring.classList.remove("on"); dot.classList.remove("on"); });
+    (function loop() {
+      rx += (tx - rx) * 0.18; ry += (ty - ry) * 0.18;
+      ring.style.transform = `translate(${rx}px,${ry}px)`;
+      requestAnimationFrame(loop);
+    })();
+  }
+
+  // ---------- Smooth page transitions between internal pages
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    const href = a.getAttribute("href");
+    if (a.target === "_blank" || !href || href.startsWith("#") || /^(https?:|mailto:|tel:)/.test(href)) return;
+    e.preventDefault();
+    document.body.classList.add("leaving");
+    setTimeout(() => { window.location.href = a.href; }, 280);
+  });
+  window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("leaving"); });
+})();
