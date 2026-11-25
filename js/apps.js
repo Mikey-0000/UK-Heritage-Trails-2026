@@ -1038,3 +1038,79 @@ if(themeToggle){
   }
   new MutationObserver(() => { if (/^Thank you/.test(st.textContent.trim())) burst(); }).observe(st, { childList: true, characterData: true, subtree: true });
 })();
+
+// =========================
+// SWINGING NAME TAG (real pendulum physics: hover, drag, scroll and click all make it swing)
+// =========================
+(function () {
+  const inner = document.querySelector(".site-footer .footer-inner");
+  if (!inner) return;
+  const wrap = document.createElement("div");
+  wrap.className = "swing-tag";
+  wrap.setAttribute("role", "group");
+  wrap.setAttribute("aria-label", "Credit: @Mikey0000, Michael Dedeji, Program and Developer");
+  wrap.innerHTML = `<span class="nail" aria-hidden="true"></span>
+    <div class="rig"><span class="cord" aria-hidden="true"></span>
+      <div class="tag-body"><span class="eyelet" aria-hidden="true"></span>
+        <div class="paper"><span class="handle">@Mikey0000</span><span class="name">Michael Dedeji</span><span class="role">Program and Developer</span></div>
+      </div>
+    </div>`;
+  inner.appendChild(wrap);
+
+  const rig = wrap.querySelector(".rig"), body = wrap.querySelector(".tag-body");
+  // main pendulum (rig) + secondary lag of the tag around its eyelet
+  let th = 0, w = 0, ph = 0, pw = 0, lastW = 0;
+  const G = 26, DAMP = 0.55, K2 = 70, D2 = 4.2;
+  let visible = false, raf = 0, last = 0, drag = false, lastX = 0, gustAt = 0;
+
+  function loop(now) {
+    raf = 0;
+    if (!visible && !drag) return;
+    const dt = Math.min(0.033, (now - last) / 1000 || 0.016); last = now;
+    if (!drag) {
+      const acc = -G * Math.sin(th) - DAMP * w;
+      w += acc * dt; th += w * dt;
+      if (now > gustAt) { w += (Math.random() - 0.5) * 0.35; gustAt = now + 2500 + Math.random() * 3500; } // idle breeze
+    }
+    const angAcc = (w - lastW) / dt; lastW = w;
+    const a2 = -K2 * ph - D2 * pw - angAcc * 0.012 * 57;
+    pw += a2 * dt; ph += pw * dt;
+    th = Math.max(-1.25, Math.min(1.25, th)); ph = Math.max(-0.9, Math.min(0.9, ph));
+    rig.style.transform = `rotate(${th}rad)`;
+    body.style.transform = `rotate(${ph}rad)`;
+    raf = requestAnimationFrame(loop);
+  }
+  const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); } };
+
+  new IntersectionObserver((es) => {
+    const was = visible; visible = es[0].isIntersecting;
+    if (visible && !was) { w += (Math.random() < 0.5 ? -1 : 1) * 2.6; wake(); } // swings in when you reach the footer
+  }, { threshold: 0.35 }).observe(wrap);
+
+  // hover/move: brush it and it swings
+  wrap.addEventListener("pointermove", (e) => {
+    if (drag) return;
+    w += Math.max(-4, Math.min(4, e.movementX * 0.045)); wake();
+  });
+  wrap.addEventListener("pointerdown", (e) => {
+    drag = true; wrap.classList.add("drag"); wrap.setPointerCapture(e.pointerId); lastX = e.clientX; wake();
+    pull(e);
+  });
+  function pull(e) {
+    const r = wrap.getBoundingClientRect();
+    const px = r.left + r.width / 2, py = r.top - 26;           // pivot position on screen
+    const nt = Math.atan2(e.clientX - px, Math.max(40, e.clientY - py));
+    w = (nt - th) / 0.016; th = nt;
+  }
+  wrap.addEventListener("pointermove", (e) => { if (drag) pull(e); });
+  const release = () => { if (!drag) return; drag = false; wrap.classList.remove("drag"); w = Math.max(-9, Math.min(9, w)); wake(); };
+  wrap.addEventListener("pointerup", release);
+  wrap.addEventListener("pointercancel", release);
+
+  // scrolling makes it sway a little
+  let sy = window.scrollY;
+  window.addEventListener("scroll", () => {
+    const d = window.scrollY - sy; sy = window.scrollY;
+    if (visible) { w += Math.max(-1.2, Math.min(1.2, d * 0.01)); wake(); }
+  }, { passive: true });
+})();
