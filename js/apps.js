@@ -299,7 +299,7 @@ if(themeToggle){
 // =========================
 (function () {
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce = false; // animations always on
 
   // ---- Toast helper
   const toast = document.createElement("div");
@@ -451,7 +451,7 @@ if(themeToggle){
 // WOW layer: leaves, ticker, filters, cursor, transitions
 // =========================
 (function () {
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce = false; // animations always on
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   // ---------- Falling leaves (canvas, reacts to mouse "wind")
@@ -502,12 +502,39 @@ if(themeToggle){
     const leaves = Array.from({ length: COUNT }, () => makeLeaf(true));
     let running = true, t = 0;
 
+    // gold dust motes (twinkling, slowly rising)
+    const motes = Array.from({ length: W < 700 ? 18 : 45 }, () => ({
+      x: Math.random() * W, y: Math.random() * H, r: 0.8 + Math.random() * 1.8,
+      v: 0.15 + Math.random() * 0.35, ph: Math.random() * 6.28
+    }));
+
+    // click anywhere = burst of leaves
+    window.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("a, button, input, select, textarea, label, #lightbox")) return;
+      for (let k = 0; k < 14 && leaves.length < 140; k++) {
+        const l = makeLeaf(false);
+        const ang = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+        l.x = e.clientX; l.y = e.clientY; l.vx = Math.cos(ang) * sp; l.vy = Math.sin(ang) * sp - 2;
+        l.vr = (Math.random() - 0.5) * 0.25; l.burst = true; l.a = 0.9;
+        leaves.push(l);
+      }
+    });
+
     function frame() {
       if (!running) return;
       t += 0.016;
       ctx.clearRect(0, 0, W, H);
+      for (const m of motes) {
+        m.y -= m.v; m.x += Math.sin(t + m.ph) * 0.25;
+        if (m.y < -5) { m.y = H + 5; m.x = Math.random() * W; }
+        ctx.globalAlpha = 0.25 + 0.55 * Math.abs(Math.sin(t * 1.4 + m.ph));
+        ctx.fillStyle = "#f0d9a2"; ctx.shadowColor = "#e8c97f"; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 6.283); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
       const speed = Math.hypot(mouse.vx, mouse.vy);
-      for (const l of leaves) {
+      for (let li = leaves.length - 1; li >= 0; li--) {
+        const l = leaves[li];
         // gentle sway + mouse gust
         l.vx += Math.sin(t * l.sw + l.ph) * 0.012;
         const dx = l.x - mouse.x, dy = l.y - mouse.y, d = Math.hypot(dx, dy);
@@ -521,7 +548,7 @@ if(themeToggle){
         l.x += l.vx + Math.sin(t * l.sw + l.ph) * 0.5;
         l.y += l.vy;
         l.rot += l.vr + l.vx * 0.01; l.flip += 0.03;
-        if (l.y > H + 30 || l.x < -60 || l.x > W + 60) Object.assign(l, makeLeaf(false));
+        if (l.y > H + 30 || l.x < -60 || l.x > W + 60) { if (l.burst) { leaves.splice(li, 1); continue; } Object.assign(l, makeLeaf(false)); }
         ctx.save();
         ctx.translate(l.x, l.y);
         ctx.rotate(l.rot);
@@ -661,4 +688,16 @@ if(themeToggle){
     setTimeout(() => { window.location.href = a.href; }, 280);
   });
   window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("leaving"); });
+})();
+
+// Hero: headline drifts with the mouse
+(function () {
+  const h1 = document.querySelector(".editorial-hero h1");
+  const photo = document.querySelector(".editorial-photo");
+  if (!h1) return;
+  window.addEventListener("pointermove", (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5), y = (e.clientY / window.innerHeight - 0.5);
+    h1.style.translate = `${x * -22}px ${y * -14}px`;
+    if (photo) photo.style.rotate = `${x * 0.6}deg`;
+  }, { passive: true });
 })();

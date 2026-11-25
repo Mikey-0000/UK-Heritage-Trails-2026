@@ -254,12 +254,6 @@ html {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 body.dark {
   background: #111;
   color: #f5f5f5;
@@ -535,7 +529,6 @@ html{scroll-padding-top:85px}body{font-family:'DM Sans',system-ui,sans-serif;bac
 .page{padding-top:65px;padding-bottom:90px}.page-head{max-width:800px;margin:0 0 40px}.page-head h1{font-size:clamp(2.8rem,5vw,5rem);font-weight:500;margin-bottom:20px}.lead{color:#526259;font-size:1.1rem}.split{padding:75px 0}.editorial-section{border-top:1px solid var(--line)}.section-head{margin-bottom:30px}.section-head h2{margin:0 0 12px}.cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:stretch}.card,.hero-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:27px;display:flex;flex-direction:column;gap:0;overflow:visible;min-width:0}.card h2,.card h3{margin:0 0 15px}.card h3{font-size:1.55rem}.card p{margin:0 0 15px}.card ul{padding-left:24px;margin:0}.card li{padding-left:3px;margin:0 0 13px;line-height:1.6}.card li:last-child{margin-bottom:0}.card img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;margin-bottom:22px}.card:hover{transform:translateY(-4px);box-shadow:0 18px 35px rgba(24,49,39,.09)}.card .btn{align-self:flex-start;margin-top:auto}.meta,.muted,.hint{color:#64736a}.form .field{margin-bottom:18px}.form label{color:var(--ink)}input,select,textarea{border-radius:6px;background:#fff;border-color:#cdd4c8;padding:13px}.form-status{min-height:1.5em}.signup-list{overflow-wrap:anywhere}.gallery-grid{gap:22px}.gallery-btn img{border-radius:8px}.gallery-item{min-width:0}.chip{border-radius:30px;border-color:var(--line);font-family:inherit;color:var(--forest)}.chip.active{background:var(--forest);border-color:var(--forest)}.site-footer{background:var(--forest-dark);border:0;color:#e6e9df;padding:36px 0}.site-footer .muted{color:#c3cfc5}.site-footer a{color:#e6e9df}
 body.dark{--cream:#12251f;--paper:#1d352b;--ink:#eef2e9;--line:#365044;background:var(--cream);color:var(--ink)}body.dark .site-header{background:#162b24}body.dark .card,body.dark .hero-card{background:var(--paper);border-color:var(--line)}body.dark .lead,body.dark .muted,body.dark .intro-grid>p{color:#c1cec2}body.dark .intro-strip{background:#20392f}body.dark .text-link{color:#dfc38f}body.dark .nav-list a{color:#e6e9df}body.dark .nav-list a.active{background:#c7a56b;color:#12251f}body.dark .brand{color:#f0f1e7}body.dark .btn.secondary,body.dark .btn.tertiary{background:#284637;color:#f2f3e8}body.dark .site-footer{background:#0a1b15}body.dark .page-head .eyebrow{color:#dfc38f}
 @media(max-width:1020px){.intro-grid{grid-template-columns:1fr 1fr}.intro-grid .text-link{grid-column:1/-1;justify-self:start}.destination-tile{min-height:360px}.header-inner{flex-wrap:wrap}.site-nav .nav-list{gap:0}.nav-list a{padding:8px}}@media(max-width:860px){.site-nav{display:none}.nav-toggle{display:inline-block}.mobile-menu:not([hidden]){display:block}.header-inner{flex-wrap:nowrap}.theme-toggle{margin-left:auto}.cards{grid-template-columns:1fr}.destination-grid{grid-template-columns:1fr 1fr}.destination-tile:first-child{grid-column:1/-1}.intro-grid{grid-template-columns:1fr}.intro-grid .text-link{grid-column:auto}.editorial-inner,.editorial-hero{min-height:650px}}@media(max-width:600px){.container{width:90%}.brand{font-size:.89rem}.brand-symbol{font-size:1.4rem}.theme-toggle{padding:7px;font-size:.75rem}.header-inner{gap:8px}.editorial-inner,.editorial-hero{min-height:610px}.editorial-inner{padding-top:55px}.editorial-hero h1{font-size:3.6rem}.hero-bottom{font-size:.58rem}.destination-grid{grid-template-columns:1fr}.destination-tile:first-child{grid-column:auto}.destination-tile{min-height:390px}.section-heading{align-items:start;flex-direction:column}.destination-section{padding-top:65px;padding-bottom:65px}.intro-strip{padding:45px 0}.page{padding-top:45px}.split{padding:48px 0}.card{padding:23px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* ==========================================================
    POLISH LAYER – elevated editorial look (green / gold)
@@ -621,7 +614,6 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 /* Scroll progress bar */
 #scrollBar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--gold),#f0d9a2);z-index:9999}
 
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
 
 /* ==========================================================
    INTERACTIVE LAYER
@@ -713,4 +705,3 @@ body.leaving{opacity:0;transition:opacity .28s}
 @keyframes float{50%{transform:translate(30px,20px) scale(1.15)}}
 
 @media (max-width:700px){#cursorRing,#cursorDot{display:none}.ticker{font-size:1rem}}
-@media (prefers-reduced-motion:reduce){#leafCanvas{display:none}.ticker-track{animation:none}}
