@@ -27,6 +27,7 @@ npx wrangler kv key get "<key>" --binding SIGNUPS --remote
 ```
 
 ### Notes
+- Live address: `https://uk-heritage-trails-2026.<your-subdomain>.workers.dev` (enabled by `workers_dev` in `wrangler.jsonc`).
 - Custom domain: Workers & Pages → your project → Settings → Domains & Routes.
 - If `/api/signup` isn't available (e.g. GitHub Pages) the form still works and saves locally in the browser.
 - Google Fonts need an internet connection; fallback fonts are provided.

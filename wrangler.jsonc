@@ -1,9 +1,12 @@
 {
   // Cloudflare Workers (static assets + a small API) configuration
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "uk-heritage-trails",
+  "name": "uk-heritage-trails-2026",
   "main": "src/worker.js",
   "compatibility_date": "2026-11-25",
+  // Public route: https://uk-heritage-trails-2026.<your-subdomain>.workers.dev
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     // The site lives in the repo root; non-site files are excluded by .assetsignore
     "directory": "./",
