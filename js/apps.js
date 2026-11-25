@@ -260,3 +260,36 @@ if(themeToggle){
   themeToggle.addEventListener('click',updatePressed);
   updatePressed();
 }
+
+// =========================
+// Visual polish: scroll progress, header shadow, reveal-on-scroll
+// =========================
+(function () {
+  const bar = document.createElement("div");
+  bar.id = "scrollBar";
+  document.body.appendChild(bar);
+  const header = document.querySelector(".site-header");
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+    if (header) header.classList.toggle("scrolled", h.scrollTop > 8);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  const targets = document.querySelectorAll(
+    ".card, .destination-tile, .intro-grid, .section-heading, .section-head, .page-head"
+  );
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  targets.forEach((el, i) => {
+    el.classList.add("reveal");
+    el.style.transitionDelay = (i % 3) * 90 + "ms";
+    io.observe(el);
+  });
+})();
