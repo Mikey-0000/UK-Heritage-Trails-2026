@@ -73,6 +73,12 @@ function isValidEmail(email) {
 // Form submit
 if (form) {
   renderSignups();
+  // Honeypot field (hidden from people, bots tend to fill it)
+  const hp = document.createElement("input");
+  hp.type = "text"; hp.name = "website"; hp.id = "website"; hp.tabIndex = -1; hp.autocomplete = "off";
+  hp.setAttribute("aria-hidden", "true");
+  hp.style.cssText = "position:absolute;left:-9999px;width:1px;height:1px;opacity:0";
+  form.appendChild(hp);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -109,17 +115,26 @@ if (form) {
     });
     storeSignups(signups);
 
-    // Success message
-    if (statusEl) {
-      statusEl.textContent = `Thank you, ${fullName}. Your demo signup was saved in this browser only. No email was sent.`;
+    // Send to the Cloudflare Worker API (works when deployed; falls back gracefully elsewhere)
+    const payload = { fullName, email, region, interests, website: (document.getElementById("website") || {}).value || "" };
+    const showStatus = (msg) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg;
       statusEl.style.color = "green";
       statusEl.style.opacity = "0";
-
-      setTimeout(() => {
-        statusEl.style.transition = "opacity 0.6s ease";
-        statusEl.style.opacity = "1";
-      }, 50);
-    }
+      setTimeout(() => { statusEl.style.transition = "opacity 0.6s ease"; statusEl.style.opacity = "1"; }, 50);
+    };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal })
+      .then((r) => r.json().catch(() => ({})).then((d) => ({ status: r.status, d })))
+      .then(({ status, d }) => {
+        if (status === 200 && d.ok) showStatus(`Thank you, ${fullName}. Your signup has been received.`);
+        else if (status === 422 && d.errors) { statusEl.textContent = d.errors.join(" "); statusEl.style.color = "crimson"; }
+        else showStatus(`Thank you, ${fullName}. Your signup was saved in this browser only.`);
+      })
+      .catch(() => showStatus(`Thank you, ${fullName}. Your signup was saved in this browser only.`))
+      .finally(() => clearTimeout(timer));
 
     form.reset();
     renderSignups();

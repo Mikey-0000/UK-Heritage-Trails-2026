@@ -1,0 +1,14 @@
+# Files that should NOT be uploaded as public website assets
+.git
+.github
+.gitignore
+.assetsignore
+.wrangler
+.dev.vars*
+node_modules
+src
+wrangler.jsonc
+package.json
+package-lock.json
+README.md
+README.txt

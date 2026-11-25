@@ -1,0 +1,18 @@
+{
+  // Cloudflare Workers (static assets + a small API) configuration
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uk-heritage-trails",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-25",
+  "assets": {
+    // The site lives in the repo root; non-site files are excluded by .assetsignore
+    "directory": "./",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // Only /api/* runs the Worker first; every page/image/css/js is served straight from the edge
+    "run_worker_first": ["/api/*"]
+  },
+  // Sign-ups are stored here. Wrangler creates this KV namespace automatically on first deploy.
+  "kv_namespaces": [{ "binding": "SIGNUPS" }],
+  "observability": { "enabled": true }
+}

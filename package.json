@@ -1,0 +1,14 @@
+{
+  "name": "uk-heritage-trails",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "UK Heritage Trails - static site + sign-up API on Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
