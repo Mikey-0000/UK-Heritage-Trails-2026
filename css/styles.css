@@ -705,3 +705,9 @@ body.leaving{opacity:0;transition:opacity .28s}
 @keyframes float{50%{transform:translate(30px,20px) scale(1.15)}}
 
 @media (max-width:700px){#cursorRing,#cursorDot{display:none}.ticker{font-size:1rem}}
+
+/* ---- Keep the green tint locked on the hero photo ---- */
+.editorial-hero{overflow:hidden}
+.editorial-photo{inset:-6%!important;filter:saturate(.9) contrast(1.03)}
+.editorial-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(25,59,50,.28),rgba(16,42,36,.38));mix-blend-mode:multiply;z-index:-1;pointer-events:none}
+.editorial-shade{background:linear-gradient(90deg,rgba(8,30,24,.82),rgba(9,32,26,.5) 55%,rgba(7,29,23,.28)),linear-gradient(0deg,rgba(9,32,26,.65),transparent 35%)!important}
